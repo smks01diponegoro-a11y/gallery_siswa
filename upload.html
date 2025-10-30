@@ -5,57 +5,81 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload Karya Siswa</title>
   <style>
-    body { font-family: Arial; background: #f8f8f8; padding: 20px; }
-    .form, .gallery { max-width: 400px; margin: auto; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-    input, button { width: 100%; margin: 10px 0; padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
-    .item { border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px 0; background: #fff; }
-    .item img { width: 100%; border-radius: 8px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .gallery {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .img-box {
+      display: inline-block;
+      background: white;
+      border-radius: 10px;
+      margin: 10px;
+      padding: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .img-box img {
+      width: 150px;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
+  <h2>Upload Karya Siswa</h2>
+  <form id="uploadForm">
+    <input type="text" id="nama" placeholder="Nama Siswa" required>
+    <select id="kelas" required>
+      <option value="">Pilih Kelas</option>
+      <option>X AK 1</option>
+      <option>X AK 2</option>
+      <option>X AK 3</option>
+      <option>X DKV 1</option>
+      <option>X DKV 2</option>
+    </select>
+    <input type="file" id="gambar" accept="image/*" required>
+    <button type="submit">Upload</button>
+  </form>
 
-  <div class="form">
-    <h2>Upload Karya</h2>
-    <input type="text" id="nama" placeholder="Nama siswa">
-    <input type="text" id="kelas" placeholder="Kelas">
-    <input type="file" id="gambar" accept="image/*">
-    <button onclick="uploadKarya()">Upload</button>
-  </div>
+  <div class="gallery" id="gallery"></div>
 
-  <div class="gallery" id="gallery">
-    <h3>Hasil Upload Sementara</h3>
-  </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+    import { getDatabase, push, ref as dbRef, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-  <script>
-    function uploadKarya() {
-      const nama = document.getElementById('nama').value.trim();
-      const kelas = document.getElementById('kelas').value.trim();
-      const file = document.getElementById('gambar').files[0];
-      const gallery = document.getElementById('gallery');
-
-      if (!nama || !kelas || !file) {
-        alert("Lengkapi semua data dulu ya!");
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const div = document.createElement('div');
-        div.classList.add('item');
-        div.innerHTML = `
-          <img src="${e.target.result}">
-          <p><b>${nama}</b> - ${kelas}</p>
-        `;
-        gallery.appendChild(div);
-
-        // Simpan data sementara di localStorage
-        const karya = JSON.parse(localStorage.getItem('karyaSiswa') || '[]');
-        karya.push({ nama, kelas, img: e.target.result });
-        localStorage.setItem('karyaSiswa', JSON.stringify(karya));
-      };
-      reader.readAsDataURL(file);
-    }
-  </script>
-
-</body>
-</html>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPxEdIbmd3wABTasMSmy11Oucswx4Xudc",
+      authDomain: "gallery-a3341.firebaseapp.com",
+      projectId: "gallery-a3341",
