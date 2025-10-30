@@ -3,140 +3,174 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Galeri Guru</title>
+  <title>Galeri Guru - Hasil Karya Siswa</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f0f0;
+      background: #f4f6f8;
+      margin: 0;
       padding: 20px;
     }
-    h1 {
+    h2 {
       text-align: center;
       color: #333;
     }
     .gallery {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 15px;
-      justify-content: center;
+      margin-top: 30px;
     }
-    .item {
+    .card {
       background: white;
-      padding: 10px;
+      padding: 15px;
       border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      width: 220px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
       text-align: center;
       position: relative;
     }
-    .item img {
+    .card img {
       width: 100%;
       border-radius: 8px;
+      margin-bottom: 8px;
     }
-    .hapus {
-      background: red;
-      color: white;
+    .btn-delete {
+      background: #e74c3c;
       border: none;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    .btn-like {
+      background: #3498db;
+      border: none;
+      color: white;
       padding: 5px 10px;
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
       margin-top: 5px;
     }
-    .like {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-top: 5px;
+    .btn-like.liked {
+      background: #2ecc71;
     }
-    .comment-section {
+    .comments {
       margin-top: 10px;
       text-align: left;
-    }
-    .comment {
-      background: #f3f3f3;
+      font-size: 0.9em;
+      background: #f8f8f8;
       padding: 5px;
       border-radius: 5px;
-      margin-top: 3px;
-      font-size: 14px;
     }
-    input.comment-input {
-      width: 100%;
+    .comments input {
+      width: 90%;
       padding: 5px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
       margin-top: 5px;
+    }
+    .comments button {
+      padding: 5px 8px;
+      margin-left: 3px;
     }
   </style>
 </head>
 <body>
-
-  <h1>Galeri Karya Siswa</h1>
+  <h2>Galeri Karya Siswa</h2>
   <div class="gallery" id="gallery"></div>
 
-  <script>
-    const gallery = document.getElementById('gallery');
-    let karya = JSON.parse(localStorage.getItem('karyaSiswa') || '[]');
-    let likes = JSON.parse(localStorage.getItem('likesData') || '{}');
-    let comments = JSON.parse(localStorage.getItem('commentsData') || '{}');
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getStorage, ref as sRef, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+    import { getDatabase, ref, onValue, remove, update, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    if (karya.length === 0) {
-      gallery.innerHTML = "<p>Belum ada karya yang diupload.</p>";
-    } else {
-      karya.forEach((k, i) => {
-        const div = document.createElement('div');
-        div.classList.add('item');
-        div.innerHTML = `
-          <img src="${k.img}" alt="Karya ${k.nama}">
-          <p><b>${k.nama}</b><br>${k.kelas}</p>
-          <button class="like" onclick="likeGambar(${i})">❤️ Like (${likes[i] || 0})</button>
-          <button class="hapus" onclick="hapusGambar(${i})">🗑 Hapus</button>
-          <div class="comment-section">
-            <input type="text" class="comment-input" placeholder="Tulis komentar..." onkeypress="tambahKomentar(event, ${i})">
-            <div id="comments-${i}">
-              ${(comments[i] || []).map(c => `<div class='comment'>${c}</div>`).join('')}
-            </div>
-          </div>
-        `;
-        gallery.appendChild(div);
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPxEdIbmd3wABTasMSmy11Oucswx4Xudc",
+      authDomain: "gallery-a3341.firebaseapp.com",
+      projectId: "gallery-a3341",
+      storageBucket: "gallery-a3341.firebasestorage.app",
+      messagingSenderId: "77411742735",
+      appId: "1:77411742735:web:112689c5cabac9e96c5f7a",
+      databaseURL: "https://gallery-a3341-default-rtdb.firebaseio.com/"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const storage = getStorage(app);
+
+    const gallery = document.getElementById("gallery");
+    const userId = Math.random().toString(36).substr(2, 9); // id unik per user
+
+    onValue(ref(db, "uploads"), (snapshot) => {
+      gallery.innerHTML = "";
+      snapshot.forEach((child) => {
+        const data = child.val();
+        const key = child.key;
+        tampilkanGambar(key, data);
       });
+    });
+
+    function tampilkanGambar(key, data) {
+      const card = document.createElement("div");
+      card.classList.add("card");
+      card.innerHTML = `
+        <button class="btn-delete">🗑️</button>
+        <img src="${data.url}" alt="${data.nama}">
+        <p><b>${data.nama}</b><br>${data.kelas}</p>
+        <button class="btn-like">❤️ ${data.likes ? Object.keys(data.likes).length : 0}</button>
+        <div class="comments" id="comments-${key}">
+          <div class="comment-list">
+            ${(data.comments ? Object.values(data.comments).map(c => `<p><b>${c.user}:</b> ${c.text}</p>`).join("") : "")}
+          </div>
+          <input type="text" id="commentInput-${key}" placeholder="Tulis komentar...">
+          <button onclick="tambahKomentar('${key}')">Kirim</button>
+        </div>
+      `;
+
+      const deleteBtn = card.querySelector(".btn-delete");
+      deleteBtn.addEventListener("click", () => hapusGambar(key, data.url));
+
+      const likeBtn = card.querySelector(".btn-like");
+      likeBtn.addEventListener("click", () => toggleLike(key, likeBtn));
+
+      gallery.prepend(card);
     }
 
-    function likeGambar(index) {
-      if (localStorage.getItem('liked-' + index)) {
-        alert("Kamu sudah like gambar ini!");
-        return;
+    async function hapusGambar(key, url) {
+      if (!confirm("Yakin hapus gambar ini?")) return;
+      try {
+        const fileRef = sRef(storage, url);
+        await deleteObject(fileRef);
+      } catch (err) {
+        console.warn("Gagal hapus file storage:", err);
       }
-      likes[index] = (likes[index] || 0) + 1;
-      localStorage.setItem('likesData', JSON.stringify(likes));
-      localStorage.setItem('liked-' + index, true);
-      location.reload();
+      await remove(ref(db, "uploads/" + key));
+      alert("Gambar dihapus!");
     }
 
-    function hapusGambar(index) {
-      if (confirm("Yakin mau hapus gambar ini?")) {
-        karya.splice(index, 1);
-        localStorage.setItem('karyaSiswa', JSON.stringify(karya));
-        location.reload();
+    async function toggleLike(key, btn) {
+      const likeRef = ref(db, `uploads/${key}/likes/${userId}`);
+      const liked = btn.classList.contains("liked");
+      if (liked) {
+        await remove(likeRef);
+        btn.classList.remove("liked");
+      } else {
+        await update(ref(db, `uploads/${key}/likes`), { [userId]: true });
+        btn.classList.add("liked");
       }
     }
 
-    function tambahKomentar(event, index) {
-      if (event.key === 'Enter') {
-        const input = event.target;
-        const komentar = input.value.trim();
-        if (komentar) {
-          if (!comments[index]) comments[index] = [];
-          comments[index].push(komentar);
-          localStorage.setItem('commentsData', JSON.stringify(comments));
-          input.value = '';
-          location.reload();
-        }
-      }
-    }
+    window.tambahKomentar = async function (key) {
+      const input = document.getElementById(`commentInput-${key}`);
+      const text = input.value.trim();
+      if (text === "") return;
+
+      const commentRef = push(ref(db, `uploads/${key}/comments`));
+      await update(commentRef, { user: "Guru", text });
+
+      input.value = "";
+    };
   </script>
-
 </body>
 </html>
