@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galeri Guru</title>
+  <style>
+    body { font-family: Arial; background: #f0f0f0; padding: 20px; }
+    h1 { text-align: center; }
+    .gallery { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+    .item { background: white; padding: 10px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 200px; text-align: center; }
+    .item img { width: 100%; border-radius: 8px; }
+  </style>
+</head>
+<body>
+
+  <h1>Galeri Karya Siswa</h1>
+  <div class="gallery" id="gallery"></div>
+
+  <script>
+    const gallery = document.getElementById('gallery');
+    const karya = JSON.parse(localStorage.getItem('karyaSiswa') || '[]');
+
+    if (karya.length === 0) {
+      gallery.innerHTML = "<p>Belum ada karya yang diupload.</p>";
+    } else {
+      karya.forEach(k => {
+        const div = document.createElement('div');
+        div.classList.add('item');
+        div.innerHTML = `
+          <img src="${k.img}" alt="Karya ${k.nama}">
+          <p><b>${k.nama}</b><br>${k.kelas}</p>
+        `;
+        gallery.appendChild(div);
+      });
+    }
+  </script>
+
+</body>
+</html>
